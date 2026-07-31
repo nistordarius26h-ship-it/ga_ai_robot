@@ -1,0 +1,15 @@
+[Unit]
+Description=4G FPV Robot Control and Cloudflare Tunnels
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=raspforex
+WorkingDirectory=/home/raspforex
+ExecStart=/bin/bash /home/raspforex/launch_robot.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
