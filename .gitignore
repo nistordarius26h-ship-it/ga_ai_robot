@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# C++
+*.o
+*.elf
+*.bin
+
+# PlatformIO
+.pio/
+
+# Raspberry Pi
+*.log
+
+# Models
+*.pt
+
+# IDEs
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
