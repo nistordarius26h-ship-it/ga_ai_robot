@@ -8,8 +8,8 @@ from flask import Flask, render_template_string
 from flask_socketio import SocketIO
 
 # --- TELEGRAM CONFIGURATION ---
-TELEGRAM_BOT_TOKEN = "8911262115:AAEpWpnu3vj_A6wQ2pUIZch7VqVri4W3qJk"
-TELEGRAM_CHAT_ID   = "5055554259"
+TELEGRAM_BOT_TOKEN = "your_bot_token" #get at @BotFather
+TELEGRAM_CHAT_ID   = "your_user_id" #get at @userinfobot by gmedia
 
 # Open UART serial connection to ESP32
 ser = serial.Serial('/dev/serial0', baudrate=115200, timeout=1)
