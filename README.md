@@ -5,6 +5,8 @@
 ![AI](https://img.shields.io/badge/AI-Object%20Tracking-orange)
 ![License](https://img.shields.io/badge/License-MIT-red)
 
+<img width="900" alt="gaairobotrenderss" src="https://github.com/user-attachments/assets/26aaba77-5643-4f9d-8797-212f19054a5e" />
+
 ## Overview
 
 This project presents a **remotely operable autonomous robot**, controllable from anywhere in the world over a 4G cellular connection.
