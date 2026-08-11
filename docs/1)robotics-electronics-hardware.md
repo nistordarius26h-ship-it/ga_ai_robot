@@ -1,75 +1,81 @@
 # Robotics & Electronics: Sensors, Modules, and Boards
 
-A breakdown of every physical component in the build, what it does, why it was chosen, and how it fits into the system.
+The full hardware bill of materials for this build — what each part does, why it's there, and how it connects into the system.
 
 ## Compute & control
 
 | Component | Role |
 |---|---|
 | **ESP32 WROOM DevKit** | Real-time motor control and sensor safety layer. Chosen for dual-core performance, PWM (LEDC) peripherals, plenty of GPIO/ADC pins, and a native Arduino/C++ toolchain — see [`esp32-firmware.md`](./esp32-firmware.md). |
-| **Raspberry Pi 4** | Edge compute: runs the Flask control server, MediaMTX video server, Cloudflare tunnels, and Telegram integration. Chosen over the ESP32 for this role because it needs real Linux (for MediaMTX, systemd, and Cloudflare's `cloudflared` binary) and more processing headroom for video handling — see [`raspberry-pi-setup.md`](./raspberry-pi-setup.md). |
+| **Raspberry Pi 4 (4GB RAM)** | Edge compute: runs the Flask control server, MediaMTX video server, Cloudflare tunnels, and Telegram integration. Chosen over the ESP32 for this role because it needs real Linux (for MediaMTX, systemd, and `cloudflared`) and enough RAM/CPU headroom for video handling — see [`raspberry-pi-setup.md`](./raspberry-pi-setup.md). |
 
 ## Drivetrain
 
 | Component | Role |
 |---|---|
-| **JGB37-500 12V DC gear motor + encoder** (×2) | Drive motors. The built-in gearbox trades top speed for torque, which matters for climbing over uneven/rugged terrain rather than racing on flat ground. |
-| **BTS7960 43A H-bridge motor driver** | Drives each motor from the LiPo pack under ESP32 PWM/direction control. See [`electrical-engineering-pcb.md`](./electrical-engineering-pcb.md) for the sizing rationale versus a smaller driver like the L298N. |
+| **4× 6.5" hoverboard hub motors** | Drive motors — one per wheel. Hub motors mean no separate gearbox/chain, which simplifies the mechanical build and keeps unsprung weight predictable, at the cost of the motor itself sitting directly in the wheel (more exposed to terrain/impacts than a chassis-mounted motor would be). |
+| **4× DC 6-60V 400W BLDC brushless motor controller (hall-sensor based)** | One controller per hub motor. Hall-sensor feedback gives the controller true commutation timing (vs. sensorless BLDC control), which means better low-speed torque and smoother starts — important for a loaded robot starting from a stop on uneven ground, versus the jerkier startup you get from sensorless ESCs. |
+
+> **Note on the firmware in this repo:** the ESP32 firmware currently published in `esp32-firmware/32controlcode.ino` drives a simpler two-channel H-bridge (BTS7960-style) differential-drive setup — it predates/doesn't yet reflect the 4-motor hub-motor + hall-sensor-controller configuration described here. If you're working from this repo, treat the firmware doc as documentation of an earlier drivetrain revision, and the four-BLDC-controller setup as the current physical build that the firmware still needs to be updated to match (each hall-sensor BLDC controller typically takes a PWM throttle input plus a direction/brake logic pin — the ESP32 has enough PWM-capable GPIO to drive all four independently).
 
 ## Power
 
 | Component | Role |
 |---|---|
-| **3S LiPo 11.1V 5000mAh** | Main pack, sized for the motor current draw and to give reasonable field runtime. |
-| **2× LM2596 3A buck regulator** | Step the LiPo voltage down to 5V for the Pi and sensor rails — kept as two independent regulators to isolate the Pi's supply from motor-driver switching noise. |
-| **Solar panel(s)** | Extends field deployment time without needing to swap/recharge the LiPo mid-mission. |
+| **2× 36V 4.4Ah battery packs** | Main power source for the drivetrain — sized for the combined draw of four 400W-class BLDC controllers under load. |
+| **36V → 5V 10A buck converter** | Steps the battery voltage down to a clean 5V rail for the Raspberry Pi and low-voltage sensors/logic. A 10A rating gives real headroom above the Pi 4's own draw for the camera, sensors, and any USB peripherals sharing that rail. |
 
 ## Sensors
 
-| Sensor | Purpose | Wired to |
+| Sensor | Purpose | Notes |
 |---|---|---|
-| **Ultrasonic distance sensor (HC-SR04-style)** | Collision avoidance — forces a hard motor stop below a configurable distance threshold. | ESP32 (TRIG/ECHO) |
-| **DHT11** | Ambient temperature & humidity monitoring, reported on the live dashboard. | ESP32 (single data pin) |
-| **Rain/water sensor** | Safety cutoff — stops the robot immediately if water is detected on the sensor pads. | ESP32 (digital) |
-| **Battery voltage sensor (resistor divider)** | Lets the firmware/dashboard report real pack voltage so you know when to recharge/swap the LiPo. | ESP32 (ADC) |
-| **Microphone module (electret + amp)** | Sound/gesture triggering — e.g. clap detection, via peak-to-peak envelope sampling and a rough dB estimate. | ESP32 (ADC) |
-| **Camera module** | Video feed for FPV control and the AI tracking pipeline. | Raspberry Pi |
+| **Ultrasonic distance sensor** | Collision avoidance — forces a motor stop below a distance threshold. | Same role as documented in [`esp32-firmware.md`](./esp32-firmware.md). |
+| **Temperature & humidity sensor** | Ambient environmental monitoring, reported on the live dashboard. | |
+| **Water/rain sensor** | Safety cutoff — stops the robot if water is detected. | |
+| **Battery voltage sensor** | Reports real pack voltage so you know when to recharge. | With a 36V pack, the sense circuit needs a resistor divider (or a dedicated voltage-sensor board) sized to bring worst-case pack voltage safely under the ESP32 ADC's 3.3V input range — this ratio is different from what a smaller LiPo pack would need, so double-check the divider math for the 36V rail specifically. |
+| **Microphone sensor** | Sound/gesture triggering (e.g. clap detection) via envelope sampling. | |
+| **Light sensor** | Ambient light level sensing — useful for auto-triggering the night-vision camera's IR illuminator or logging environmental conditions alongside temp/humidity. | |
+| **MPU6500 (6-axis IMU)** | Accelerometer + gyroscope — gives the robot orientation, tilt, and motion-dynamics data (useful for detecting the suspension working, a tip-over event, or rough terrain). | Typically I²C. |
+| **HMC5883L (3-axis magnetometer)** | Digital compass — heading/orientation relative to magnetic north. | Commonly paired with an IMU like the MPU6500 to get a full 9-DOF orientation estimate (accel + gyro + compass) — useful groundwork for future SLAM/autonomous-navigation work. Keep it mounted away from motor wiring and the BLDC controllers, since magnetometers are sensitive to nearby current-carrying conductors and motor magnets throwing off the heading reading. |
+| **160° FOV camera with night vision** | Video feed for FPV control and the AI tracking pipeline, with the wide field of view helping compensate for a fixed (non-gimbaled) camera mount, and IR night-vision extending usable operating hours. | Feeds into MediaMTX on the Pi — see [`raspberry-pi-setup.md`](./raspberry-pi-setup.md). |
 
 ## Actuation / feedback
 
 | Component | Role |
 |---|---|
-| **Buzzer** | Audible status/alert indicator, driven via LEDC tone output on the ESP32. |
+| **Beeper (buzzer)** | Audible status/alert indicator. |
 | **Status LED** | Visual state indicator. |
-| **Active mechanical suspension** | Improves stability and traction across rugged, uneven terrain — modeled with real joints in Fusion 360 to verify range of motion before build; see [`3d-modeling-rendering.md`](./3d-modeling-rendering.md). |
 
 ## Networking / connectivity
 
 | Component | Role |
 |---|---|
-| **4G LTE USB modem** | Provides the Pi's internet uplink in the field, independent of local Wi-Fi. |
+| **ZTE MF833N USB 4G modem** | Provides the Pi's internet uplink in the field, independent of local Wi-Fi — this is what makes the robot reachable globally over Cloudflare Tunnel. See [`cloudflare-telegram-remote-access.md`](./cloudflare-telegram-remote-access.md). |
 
 ## How it all fits together
 
 ```
+Sensors ───────►┌──────────────────────────┐
+(ultrasonic,    │         ESP32            │◄──── 4× hall-sensor BLDC controllers ──► 4× hoverboard hub motors
+ temp/humidity, │  (real-time control &    │
+ water, mic,    │   safety loop)           │
+ light, MPU6500,└───────────┬──────────────┘
+ HMC5883L,                  │ UART (telemetry / commands)
+ voltage)                   ▼
                 ┌──────────────────────────┐
-Sensors ───────►│         ESP32            │◄──── Motor driver (BTS7960) ──► JGB37-500 motors ×2
-(ultrasonic,    │  (real-time control &    │
- DHT11, water,  │   safety loop)           │
- mic, voltage)  └───────────┬──────────────┘
-                             │ UART 115200 (TELEMETRY: / CMD:)
-                             ▼
-                ┌──────────────────────────┐
-Camera ────────►│      Raspberry Pi 4      │
-                │  Flask + SocketIO,       │
+Camera (160°,  ►│      Raspberry Pi 4      │
+ night vision)  │  Flask + SocketIO,       │
                 │  MediaMTX, cloudflared   │
                 └───────────┬──────────────┘
                              │ Cloudflare Tunnel (WebRTC + control)
                              ▼
-                    4G LTE ── Internet ── Browser / Telegram (anywhere)
+        ZTE MF833N 4G ── Internet ── Browser / Telegram (anywhere)
                              │
                              ▼ (video feed)
               Offboard GPU workstation — YOLO11 + ByteTrack tracking
+
+Power: 2× 36V 4.4Ah packs ──► BLDC controllers (direct)
+                          └──► 36V→5V 10A converter ──► Pi 4, sensors, logic
 ```
 
 This split — ESP32 for hard real-time/safety-critical control, Pi for networking/media, offboard GPU for AI — keeps each piece doing what it's actually good at instead of overloading a single board with everything.
