@@ -1,6 +1,4 @@
-# Documentation Index
-
-Detailed technical documentation for the **Globally Accessible Autonomous Robot with AI Tracking & Environmental Sensing** project. Each file below covers one subsystem in depth — hardware design, firmware, edge software, and the AI pipeline.
+# Documentation
 
 | Doc | Covers |
 |---|---|
