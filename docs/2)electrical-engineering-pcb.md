@@ -1,63 +1,39 @@
 # Electrical Engineering & PCB Design
 
-This covers the robot's power distribution, motor driving, and general wiring approach, plus the custom PCB workflow used across my projects (including this one).
-
-## Power architecture
+## Power & wiring for this robot
 
 | Stage | Component | Notes |
 |---|---|---|
-| Main pack | 3S LiPo, 11.1V nominal, 5000 mAh | Powers the motors and, through regulation, everything else |
-| Motor driver | BTS7960 43A H-bridge module | Drives the JGB37-500 12V gear motor directly from LiPo voltage |
-| Logic supply | 2× LM2596 3A buck regulator | One rail regulated to 5V for the Raspberry Pi / sensors, ESP32 runs from its own onboard 3.3V regulator fed from a 5V rail |
-| Solar input | Solar panel(s) | Trickle-charges/extends the LiPo for longer field deployments |
+| Main pack | 2× 36V 4.4Ah battery packs | Power the four hall-sensor BLDC motor controllers directly |
+| Drivetrain | 4× DC 6-60V 400W BLDC controller (hall sensor) → 4× 6.5" hoverboard hub motor | Each controller takes hall-sensor feedback from its motor for accurate commutation, and a PWM throttle / direction input from the ESP32 |
+| Logic supply | 36V → 5V 10A buck converter | Regulates the pack voltage down for the Raspberry Pi, ESP32, and sensor rail |
 
-**Why BTS7960 over a smaller L298N-class driver:** the JGB37-500 draws well beyond what an L298N (2A) can sustain under load on uneven terrain. The BTS7960 is rated to 43A and uses MOSFETs rather than a linear bipolar bridge, so it runs cooler and wastes less power as heat — important on a battery-powered platform.
+**Why hall-sensor BLDC controllers over sensorless ESCs:** hall sensors give the controller real, immediate rotor-position feedback instead of inferring it from back-EMF, which matters most exactly where a robot needs it — starting from a dead stop under load and running at low speed on uneven terrain. Sensorless controllers tend to stumble or need a "kick-start" ramp in that regime; hall-sensor controllers don't.
 
-**Why two separate LM2596 regulators instead of one:** splitting the Raspberry Pi's supply from the sensor/peripheral supply keeps voltage sag from motor-driver switching noise off the Pi's rail, which is more sensitive to brownouts (an undervoltage Pi can silently corrupt the SD card).
+**Voltage sensing on a 36V pack:** the battery voltage sensor needs a resistor divider (or dedicated sensor board) sized specifically for a 36V rail — bringing worst-case pack voltage safely under the ESP32's 3.3V ADC limit. This is a different divider ratio than you'd use on a smaller pack (e.g. a 3S LiPo), so it's worth double-checking/re-deriving the resistor values for this specific pack voltage rather than reusing values from a different project.
 
-## ESP32 wiring
+**General decoupling practice:** every sensor module's supply pins should get a local decoupling capacitor near the module itself (not just at the regulator output), to suppress switching noise from the BLDC controllers coupling into the sensitive sensor rails — this matters more here than on a smaller build, since four independent motor controllers switching simultaneously is a noisier electrical environment than a single H-bridge.
 
-The ESP32 sits between the sensors/motors and the Raspberry Pi. Full pin assignments are documented in [`esp32-firmware.md`](./esp32-firmware.md#pin-map); the electrical highlights:
+## PCB design — not yet done for this robot
 
-- **Motor driver interface:** `ENA`/`ENB` (PWM, LEDC-driven) plus `IN1–IN4` direction pins straight into the BTS7960's logic inputs. The BTS7960's own high-current side is fed directly from the LiPo, isolated from the ESP32's 3.3V logic domain except through the driver's opto-isolated (or resistor-buffered, depending on the module revision) inputs.
-- **Analog sensing:** battery voltage is read through a resistor divider into an ADC1 pin (GPIO35) — never feed LiPo voltage directly into an ESP32 ADC pin, the divider ratio must bring worst-case pack voltage (~12.6V full charge) safely under 3.3V.
-- **Ultrasonic sensor:** standard TRIG/ECHO HC-SR04-style wiring. Note the ECHO line is a 5V logic signal on most HC-SR04 modules — if using a 5V-tolerant module without a divider, confirm your specific sensor variant is 3.3V-safe on ECHO or add a divider/level shifter to protect the ESP32 pin.
-- **DHT11, water sensor, microphone, buzzer:** all straightforward digital/analog GPIO, no special conditioning beyond decoupling capacitors near each module's supply pins.
+There's no custom PCB in this project yet — the wiring here is point-to-point/breadboard-and-perfboard style. Custom PCB design and fabrication is a skill I learned and applied on a separate project, **[`esp32jamm`](https://github.com/nistordarius26h-ship-it/esp32jamm)** (an ESP32-based wireless sniffing platform), and that's the workflow I'd bring over here if/when this robot gets a dedicated board.
 
-**General decoupling practice:** every sensor module supply pin gets a local decoupling capacitor near the module (not just at the regulator output) — this is standard practice to suppress switching noise from the motor driver from coupling into the sensor rails.
+### The workflow I learned on `esp32jamm`
 
-## Custom PCB design workflow
-
-The custom PCB experience for this project's family of builds (this robot and the standalone [`esp32jamm`](https://github.com/nistordarius26h-ship-it/esp32jamm) wireless-sniffing platform) follows the same pipeline:
-
-1. **Schematic capture & layout — EasyEDA.** EasyEDA's browser-based editor was used for schematic entry and PCB layout. It's a good entry point for custom boards because its component library is directly tied to JLCPCB's parts catalog, so part footprints and sourcing stay consistent from schematic to fabrication.
-2. **Design considerations:**
-   - Power traces (motor driver / battery routing) sized wider than signal traces to handle higher current without excessive voltage drop or heating.
+1. **Schematic capture & layout — EasyEDA.** EasyEDA's browser-based editor for schematic entry and PCB layout. A good entry point for custom boards because its component library ties directly into JLCPCB's parts catalog, so footprints and sourcing stay consistent from schematic straight through to the fab file.
+2. **Design considerations I picked up:**
+   - Power traces routed wider than signal traces to handle current without excessive voltage drop/heating.
    - Decoupling capacitors placed as close as possible to each IC's power pins.
-   - External antenna connector footprints (on the RF-focused board) placed at the board edge with clear ground pour clearance per the module datasheet's RF section.
-   - Silkscreen labels added for every connector and test point — this pays off enormously during assembly and debugging.
-3. **Gerber export.** EasyEDA exports the standard Gerber/Excellon set: `Gerber_TopLayer.GTL`, `Gerber_BottomLayer.GBL`, solder mask layers (`.GTS`/`.GBS`), silkscreen (`.GTO`), board outline (`.GKO`), and drill files (`.DRL` for plated through-holes and vias).
-4. **Fabrication — JLCPCB.** The exported Gerber .zip is uploaded directly to JLCPCB for manufacturing. JLCPCB's online Gerber viewer is also useful as a final visual sanity check before ordering (catches silkscreen collisions, missing outline layers, etc. before you pay for a board).
-5. **Assembly.** Components hand-soldered onto the fabricated board; a multimeter continuity check on every power net before first power-up is non-negotiable — it catches shorts that are far cheaper to fix before power is ever applied.
+   - External antenna connector footprints placed at the board edge, with ground pour clearance around them per the module's RF datasheet section.
+   - Silkscreen labels on every connector and test point — pays off hugely during assembly and debugging.
+3. **Gerber export.** EasyEDA exports the standard Gerber/Excellon set: `Gerber_TopLayer.GTL`, `Gerber_BottomLayer.GBL`, solder mask layers (`.GTS`/`.GBS`), silkscreen (`.GTO`), board outline (`.GKO`), and drill files (`.DRL`).
+4. **Fabrication — JLCPCB.** Uploaded the exported Gerber `.zip` directly to JLCPCB for manufacturing, using their online Gerber viewer as a final visual sanity check before ordering (catches silkscreen collisions, missing outline layers, etc. before paying for a board).
+5. **Assembly.** Hand-soldered the components onto the fabricated board, checking continuity on every power net with a multimeter before first power-up — a five-minute check that's far cheaper than a shorted board.
 
-### Suggested `pcb/` folder structure for this repo
+### What a future PCB for this robot would consolidate
 
-If/when a dedicated board is designed for this robot (vs. the current point-to-point wiring), keep the same structure used in `esp32jamm`:
+If this robot gets a dedicated board, the obvious candidates to bring onto one PCB (rather than loose modules and jumper wires) are: the ESP32 itself, the sensor breakouts (ultrasonic, temp/humidity, water, mic, light, MPU6500, HMC5883L, voltage sensor), and the buzzer/LED — leaving the four BLDC controllers and the 36V→5V converter as separate high-current modules connected by wire, since keeping high-current switching hardware physically separate from the low-current sensor/logic board is generally good practice for noise isolation.
 
-```
-pcb/
-  Gerber_TopLayer.GTL
-  Gerber_BottomLayer.GBL
-  Gerber_TopSolderMaskLayer.GTS
-  Gerber_BottomSolderMaskLayer.GBS
-  Gerber_TopSilkscreenLayer.GTO
-  Gerber_BoardOutlineLayer.GKO
-  Gerber_DocumentLayer.GDL
-  Drill_PTH_Through.DRL
-  Drill_PTH_Through_Via.DRL
-  *.png          # rendered top/bottom board previews for the README
-```
+### Reference
 
-## Reference
-
-- Custom PCB example (same design workflow): [`nistordarius26h-ship-it/esp32jamm`](https://github.com/nistordarius26h-ship-it/esp32jamm)
+- PCB design/fabrication example: [`nistordarius26h-ship-it/esp32jamm`](https://github.com/nistordarius26h-ship-it/esp32jamm)
