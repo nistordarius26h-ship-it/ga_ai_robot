@@ -14,7 +14,7 @@
 
 ## PCB design — not yet done for this robot
 
-There's no custom PCB in this project yet — the wiring here is point-to-point/breadboard-and-perfboard style. Custom PCB design and fabrication is a skill I learned and applied on a separate project, **[`esp32jamm`](https://github.com/nistordarius26h-ship-it/esp32jamm)** (an ESP32-based wireless sniffing platform), and that's the workflow I'd bring over here if/when this robot gets a dedicated board.
+There's no custom PCB in this project yet — the wiring here is point-to-point/perfboard style. Custom PCB design and fabrication is a skill I learned and applied on a separate project, **[`esp32jamm`](https://github.com/nistordarius26h-ship-it/esp32jamm)** (an ESP32-based wireless sniffing platform), and that's the workflow I'd bring over here if/when this robot gets a dedicated board.
 
 ### The workflow I learned on `esp32jamm`
 
