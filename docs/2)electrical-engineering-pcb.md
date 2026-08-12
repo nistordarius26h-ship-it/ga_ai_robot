@@ -12,8 +12,6 @@
 
 **Voltage sensing on a 36V pack:** the battery voltage sensor needs a resistor divider (or dedicated sensor board) sized specifically for a 36V rail — bringing worst-case pack voltage safely under the ESP32's 3.3V ADC limit. This is a different divider ratio than you'd use on a smaller pack (e.g. a 3S LiPo), so it's worth double-checking/re-deriving the resistor values for this specific pack voltage rather than reusing values from a different project.
 
-**General decoupling practice:** every sensor module's supply pins should get a local decoupling capacitor near the module itself (not just at the regulator output), to suppress switching noise from the BLDC controllers coupling into the sensitive sensor rails — this matters more here than on a smaller build, since four independent motor controllers switching simultaneously is a noisier electrical environment than a single H-bridge.
-
 ## PCB design — not yet done for this robot
 
 There's no custom PCB in this project yet — the wiring here is point-to-point/breadboard-and-perfboard style. Custom PCB design and fabrication is a skill I learned and applied on a separate project, **[`esp32jamm`](https://github.com/nistordarius26h-ship-it/esp32jamm)** (an ESP32-based wireless sniffing platform), and that's the workflow I'd bring over here if/when this robot gets a dedicated board.
