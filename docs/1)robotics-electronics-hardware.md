@@ -16,8 +16,6 @@ The full hardware bill of materials for this build — what each part does, why 
 | **4× 6.5" hoverboard hub motors** | Drive motors — one per wheel. Hub motors mean no separate gearbox/chain, which simplifies the mechanical build and keeps unsprung weight predictable, at the cost of the motor itself sitting directly in the wheel (more exposed to terrain/impacts than a chassis-mounted motor would be). |
 | **4× DC 6-60V 400W BLDC brushless motor controller (hall-sensor based)** | One controller per hub motor. Hall-sensor feedback gives the controller true commutation timing (vs. sensorless BLDC control), which means better low-speed torque and smoother starts — important for a loaded robot starting from a stop on uneven ground, versus the jerkier startup you get from sensorless ESCs. |
 
-> **Note on the firmware in this repo:** the ESP32 firmware currently published in `esp32-firmware/32controlcode.ino` drives a simpler two-channel H-bridge (BTS7960-style) differential-drive setup — it predates/doesn't yet reflect the 4-motor hub-motor + hall-sensor-controller configuration described here. If you're working from this repo, treat the firmware doc as documentation of an earlier drivetrain revision, and the four-BLDC-controller setup as the current physical build that the firmware still needs to be updated to match (each hall-sensor BLDC controller typically takes a PWM throttle input plus a direction/brake logic pin — the ESP32 has enough PWM-capable GPIO to drive all four independently).
-
 ## Power
 
 | Component | Role |
@@ -31,11 +29,11 @@ The full hardware bill of materials for this build — what each part does, why 
 |---|---|---|
 | **Ultrasonic distance sensor** | Collision avoidance — forces a motor stop below a distance threshold. | Same role as documented in [`esp32-firmware.md`](./esp32-firmware.md). |
 | **Temperature & humidity sensor** | Ambient environmental monitoring, reported on the live dashboard. | |
-| **Water/rain sensor** | Safety cutoff — stops the robot if water is detected. | |
+| **Water/rain sensor** | For rainy days. | |
 | **Battery voltage sensor** | Reports real pack voltage so you know when to recharge. | With a 36V pack, the sense circuit needs a resistor divider (or a dedicated voltage-sensor board) sized to bring worst-case pack voltage safely under the ESP32 ADC's 3.3V input range — this ratio is different from what a smaller LiPo pack would need, so double-check the divider math for the 36V rail specifically. |
 | **Microphone sensor** | Sound/gesture triggering (e.g. clap detection) via envelope sampling. | |
 | **Light sensor** | Ambient light level sensing — useful for auto-triggering the night-vision camera's IR illuminator or logging environmental conditions alongside temp/humidity. | |
-| **MPU6500 (6-axis IMU)** | Accelerometer + gyroscope — gives the robot orientation, tilt, and motion-dynamics data (useful for detecting the suspension working, a tip-over event, or rough terrain). | Typically I²C. |
+| **MPU6500 (6-axis IMU)** | Accelerometer + gyroscope — gives the robot orientation, tilt, and motion-dynamics data. | Typically I²C. |
 | **HMC5883L (3-axis magnetometer)** | Digital compass — heading/orientation relative to magnetic north. | Commonly paired with an IMU like the MPU6500 to get a full 9-DOF orientation estimate (accel + gyro + compass) — useful groundwork for future SLAM/autonomous-navigation work. Keep it mounted away from motor wiring and the BLDC controllers, since magnetometers are sensitive to nearby current-carrying conductors and motor magnets throwing off the heading reading. |
 | **160° FOV camera with night vision** | Video feed for FPV control and the AI tracking pipeline, with the wide field of view helping compensate for a fixed (non-gimbaled) camera mount, and IR night-vision extending usable operating hours. | Feeds into MediaMTX on the Pi — see [`raspberry-pi-setup.md`](./raspberry-pi-setup.md). |
 
