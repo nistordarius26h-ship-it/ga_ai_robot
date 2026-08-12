@@ -50,7 +50,7 @@ MediaMTX is the media server that takes the Pi's camera feed and exposes it over
 
 A Flask + Flask-SocketIO app that:
 
-- Serves a single-page HTML dashboard (embedded in the script as `HTML_PAGE`) with an on-screen joystick (nipplejs) and a live telemetry HUD (battery, mic dB, distance, water, temp, humidity).
+- Serves a single-page HTML dashboard (embedded in the script as `HTML_PAGE`) with an on-screen joysticks (nipplejs) and a live telemetry HUD.
 - Opens the UART link to the ESP32 (`serial.Serial('/dev/serial0', baudrate=115200, timeout=1)`) — **the baud rate here must match `Serial2.begin(115200, ...)` in the ESP32 firmware.**
 - Runs two background threads:
   - `read_serial_telemetry()` — parses `TELEMETRY:` lines from the ESP32 and re-emits them to connected browsers over Socket.IO.
