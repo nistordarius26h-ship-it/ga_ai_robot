@@ -1,24 +1,15 @@
 # AI Tracking Module
 
-This robot uses a **standalone AI computer vision pipeline** for real-time object detection, multi-object tracking, and autonomous target following.
+The detection/tracking pipeline lives in its own repository rather than being duplicated here, since it's reused across a few different vision projects.
 
-Rather than duplicating the source code, the tracking system is maintained in its own dedicated repository, making it easier to develop, update, and reuse across multiple robotics and computer vision projects.
+Repository: https://github.com/nistordarius26h-ship-it/ai_multiobject_python_tracker
 
-## 🔗 AI Multi-Object Python Tracker
+**Features**
+- Real-time detection with Ultralytics YOLO
+- Multi-object tracking with ByteTrack
+- Person-following mode for the robot
+- CUDA/ROCm GPU acceleration, CPU fallback
+- Motion trails, speed estimation, telemetry overlay
+- Works with webcams, RTSP, drones, and other live sources
 
-The complete tracking implementation, documentation, installation guide, and source code are available here:
-
-**Repository:**
-https://github.com/nistordarius26h-ship-it/ai_multiobject_python_tracker
-
-### Features
-
-* Real-time object detection with **Ultralytics YOLO**
-* Multi-object tracking using **ByteTrack**
-* Person-following support for autonomous robotics
-* GPU acceleration (CUDA / ROCm) with CPU fallback
-* Motion trails, speed estimation, and telemetry
-* Compatible with webcams, RTSP streams, drones, and other live video sources
-
----
-
+See [`docs/6)ai-tracking-computer-vision.md`](./docs/6%29ai-tracking-computer-vision.md) for how it's adapted to the robot.
