@@ -9,7 +9,7 @@ from flask_socketio import SocketIO
 
 # --- TELEGRAM CONFIGURATION ---
 TELEGRAM_BOT_TOKEN = "your_bot_token" #get at @BotFather
-TELEGRAM_CHAT_ID   = "your_user_id" #get at @userinfobot by gmedia
+TELEGRAM_CHAT_ID = "your_user_id" #get at @userinfobot by gmedia
 
 ser = serial.Serial('/dev/serial0', baudrate=115200, timeout=1)
 
@@ -151,10 +151,10 @@ HTML_PAGE = """
     <!-- Top Left HUD -->
     <div id="hud">
         ⚡ BATT: <span id="batt" class="hud-val">--</span> V<br>
-        🎙️ NOISE: <span id="mic" class="hud-val">--</span> dB<br>
+        🎙 NOISE: <span id="mic" class="hud-val">--</span> dB<br>
         📏 DIST: <span id="dist" class="hud-val">--</span> cm<br>
         💧 WATER: <span id="water" class="hud-val">--</span><br>
-        🌡️ TEMP: <span id="temp" class="hud-val">--</span> °C<br>
+        🌡 TEMP: <span id="temp" class="hud-val">--</span> °C<br>
         💨 HUMID: <span id="humid" class="hud-val">--</span> %<br>
         💡 LIGHT: <span id="light-mode" class="hud-val">--</span>
     </div>
@@ -189,6 +189,7 @@ HTML_PAGE = """
     <!-- Dual Joystick Touch Zones -->
     <div id="left-joystick-zone"></div>
     <div id="right-joystick-zone"></div>
+    <div id="debug-control" style="position:fixed; bottom:10px; left:50%; transform:translateX(-50%); color:#0f0; background:rgba(0,0,0,0.6); padding:4px 10px; font-family:monospace; font-size:13px; z-index:9999;">sent: throttle=0 steering=0</div>
 
     <script>
         const videoEl = document.getElementById('video');
@@ -241,7 +242,7 @@ HTML_PAGE = """
             document.getElementById('temp').innerText = d.temp;
             document.getElementById('humid').innerText = d.humid;
 
-            document.getElementById('light-mode').innerText = d.is_day ? "☀️ DAY" : "🌙 NIGHT";
+            document.getElementById('light-mode').innerText = d.is_day ? "☀ DAY" : "🌙 NIGHT";
 
             // Compass Instrument Update
             if (d.heading !== '--') {
@@ -274,6 +275,8 @@ HTML_PAGE = """
             if (now - lastSendTime > 40) {
                 socket.emit('control', { throttle: currentThrottle, steering: currentSteering });
                 lastSendTime = now;
+                const dbgEl = document.getElementById('debug-control');
+                if (dbgEl) dbgEl.innerText = `sent: throttle=${currentThrottle} steering=${currentSteering}`;
             }
         }
 
@@ -342,6 +345,7 @@ def get_stream_url():
 
 @socketio.on('control')
 def handle_control(data):
+    print(f"[control] received from browser: {data}")
     ser.write(f"CMD:{data['throttle']},{data['steering']}\n".encode('utf-8'))
 
 if __name__ == '__main__':
