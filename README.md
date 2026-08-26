@@ -85,21 +85,39 @@ The platform combines low-level embedded motor control, onboard edge computing, 
 
 ## Hardware
 
-- ESP32 WROOM DevKit
-- Raspberry Pi 4
-- 4G LTE USB modem
-- Ultrasonic distance sensors
-- Microphone module
-- Battery voltage sensor
-- Temperature & humidity sensor
-- Rain/water sensor
-- Solar panel(s)
-- Camera module
+**Compute**
+- ESP32 WROOM DevKit — real-time motor control & sensor safety layer
+- Raspberry Pi 4 (4GB) — edge compute, streaming, orchestration
+
+**Drivetrain**
+- 4× 6.5" hoverboard hub motors
+- 4× DC 6-60V 400W hall-sensor BLDC motor controllers
+- PCA9685 16-channel PWM driver (I2C `0x40`) — generates PWM + direction signals for all 4 motors, 1 kHz
+
+**Power**
+- 2× 36V 4.4Ah battery packs
+- 36V → 5V 10A buck converter (Pi, ESP32, sensor rail)
+
+**Sensors**
+- Ultrasonic distance sensor (collision braking)
+- DHT11 temperature & humidity sensor
+- Water/rain sensor
+- Battery voltage sensor (100kΩ/6.8kΩ resistor divider)
+- INMP441 I2S digital microphone (currently disabled in firmware — analog placeholder in use)
+- Light sensor (analog + digital output)
+- MPU6050 6-axis accelerometer/gyro (I2C)
+- QMC5883L 3-axis magnetometer (I2C)
+- 160° FOV night-vision camera
+
+**Actuation / feedback**
+- 3-pin transistor active buzzer
+- Status LED
+
+**Connectivity**
+- ZTE MF833N USB 4G/LTE modem
+
+**Chassis**
 - Custom chassis
-- JGB37-500 12V motor and encoder
-- 2X 3A LM2596 voltage regulator
-- BTS7960 43A controller module
-- 3S LiPo 11.1V 5000mAh battery
 
 ---
 
