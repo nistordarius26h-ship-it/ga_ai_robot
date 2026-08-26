@@ -1,4 +1,5 @@
-# Globally Accessible Autonomous Robot with AI Tracking & Environmental Sensing
+# GA AI Robot — Globally Accessible Autonomous Robot
+
 ![Python](https://img.shields.io/badge/Python-3.11-blue)
 ![C++](https://img.shields.io/badge/C%2B%2B-ESP32-blue)
 ![Linux](https://img.shields.io/badge/Platform-Raspberry%20Pi-green)
@@ -9,103 +10,78 @@
 
 ## Overview
 
-This project presents a **remotely operable autonomous robot**, controllable from anywhere in the world over a 4G cellular connection.
+Four-wheeled differential-drive robot, controllable from anywhere over 4G. An ESP32 handles motor control and safety-critical sensors in a tight real-time loop; a Raspberry Pi 4 handles video streaming, the web dashboard, and remote connectivity; an offboard GPU workstation runs YOLO11 + ByteTrack for person detection and tracking.
 
-The robot integrates the AI Multi-Object Tracker developed in my previous project, adapting it into an autonomous person-following system capable of real-time object detection and tracking. By combining this computer vision pipeline with onboard robotics hardware, the platform can detect, track, and follow designated targets while remaining under remote supervision.
-
-The platform combines low-level embedded motor control, onboard edge computing, real-time video streaming, offboard AI object tracking, and solar-based power into a single distributed system — enabling autonomous navigation and cargo transport across rugged, uneven terrain without dependence on local Wi-Fi.
-
-> **Disclaimer**
->
-> This project is a personal engineering/research build. It is not a commercial or certified product, and hardware/wiring shared here should be adapted and tested carefully before reuse.
-
----
+This is a personal build, not a certified product. Wiring and code here should be checked against your own hardware before reuse.
 
 ## Features
 
-- Global remote access via 4G LTE
-- Low-latency FPV video streaming (WebRTC)
-- Real-time AI object detection & autonomous target-following
-- Active mechanical suspension for terrain stability
-- Ultrasonic collision avoidance
-- Microphone-based sound/gesture triggering (e.g. clap detection)
-- Battery voltage monitoring with automated alerts
-- Temperature, humidity, and rain/water sensing
-- Solar-powered for extended field deployment
-- Automated boot orchestration and secure remote tunneling
+- Remote control over 4G LTE, no local Wi-Fi dependency
+- Low-latency video via WebRTC (MediaMTX)
+- Real-time object detection and target-following (YOLO11 + ByteTrack, offboard)
+- Ultrasonic collision braking
+- Battery voltage, temperature/humidity, and water sensing
+- Telegram boot notification with current tunnel URLs
+- Automated boot via systemd + Cloudflare Tunnel
 
----
+## System architecture
 
-## System Architecture
+```
+Sensors/motors → ESP32 (real-time control, safety loop)
+              → UART → Raspberry Pi 4 (dashboard, video, tunnels, Telegram)
+                     → Cloudflare Tunnel → Internet → browser / Telegram
+                     → video feed → offboard GPU workstation (YOLO11 + ByteTrack)
+```
 
-- Environment / Terrain
-- ESP32 (motor control, safety sensors)
-- Raspberry Pi (edge compute, streaming, orchestration)
-- 4G LTE Modem (remote connectivity)
-- Offboard AI Workstation (GPU-accelerated tracking)
-- Remote Operator (anywhere in the world)
-
----
+See [`docs/`](./docs) for the full breakdown.
 
 ## Technologies
 
-- C++ (ESP32 firmware)
-- Python (Flask, SocketIO, AI tracking)
-- Linux (Raspberry Pi)
-- MediaMTX (WebRTC streaming)
-- Ultralytics YOLO11x
-- ByteTrack
+- C++ (ESP32 firmware, Arduino framework)
+- Python (Flask, Flask-SocketIO, PyTorch)
+- MediaMTX (WebRTC/WHEP video)
+- Ultralytics YOLO11x + ByteTrack
 - Cloudflare Tunnel
 - systemd
 
----
-
 ## Requirements
 
-### Software
-
+**Software**
 - Python 3.11+
-- C++ toolchain for ESP32
-- Raspberry Pi OS (32 / 64-bit)
-- PlatformIO or Arduino IDE
+- Arduino IDE or PlatformIO
+- Raspberry Pi OS (32/64-bit)
 - PyTorch (CUDA, ROCm, or CPU)
 - MediaMTX
-- Cloudflare Tunnel
+- cloudflared
 
-### Network
+**Network**
+- 4G LTE modem with active data plan
 
-- 4G LTE modem with active data connection
-- Internet connectivity for remote operation
-
-> **Development Note**
->
-> The AI tracking pipeline was developed and tested on an **AMD Radeon RX 7800 XT**. Configuring GPU acceleration with ROCm/HIP required additional setup compared to NVIDIA CUDA. If GPU acceleration is unavailable, the AI software automatically falls back to CPU execution.
-
----
+AI tracking was developed and tested on an AMD Radeon RX 7800 XT. ROCm/HIP setup takes more steps than CUDA; falls back to CPU if no GPU is available.
 
 ## Hardware
 
 **Compute**
-- ESP32 WROOM DevKit — real-time motor control & sensor safety layer
-- Raspberry Pi 4 (4GB) — edge compute, streaming, orchestration
+- ESP32 WROOM DevKit — motor control, sensor safety loop
+- Raspberry Pi 4 (4GB) — dashboard, video, tunnels, Telegram
 
 **Drivetrain**
 - 4× 6.5" hoverboard hub motors
-- 4× DC 6-60V 400W hall-sensor BLDC motor controllers
-- PCA9685 16-channel PWM driver (I2C `0x40`) — generates PWM + direction signals for all 4 motors, 1 kHz
+- 4× DC 6–60V 400W hall-sensor BLDC motor controllers
+- PCA9685 16-channel PWM driver (I2C 0x40) — PWM + direction per motor, 1 kHz
 
 **Power**
 - 2× 36V 4.4Ah battery packs
 - 36V → 5V 10A buck converter (Pi, ESP32, sensor rail)
 
 **Sensors**
-- Ultrasonic distance sensor (collision braking)
-- DHT11 temperature & humidity sensor
+- Ultrasonic distance sensor
+- DHT11 temperature/humidity
 - Water/rain sensor
-- Battery voltage sensor (100kΩ/6.8kΩ resistor divider)
-- INMP441 I2S digital microphone (currently disabled in firmware — analog placeholder in use)
-- Light sensor (analog + digital output)
-- MPU6050 6-axis accelerometer/gyro (I2C)
+- Battery voltage sensor (100kΩ/6.8kΩ divider)
+- INMP441 I2S microphone (currently disabled in firmware, placeholder value in telemetry)
+- Light sensor (analog + digital)
+- MPU6050 6-axis accel/gyro (I2C)
 - QMC5883L 3-axis magnetometer (I2C)
 - 160° FOV night-vision camera
 
@@ -117,40 +93,29 @@ The platform combines low-level embedded motor control, onboard edge computing, 
 - ZTE MF833N USB 4G/LTE modem
 
 **Chassis**
-- Custom chassis
+- Custom Fusion 360 design, see [`docs/7)3d-modeling-rendering.md`](./docs/7%293d-modeling-rendering.md)
 
----
-
-## Project Structure
+## Project structure
 
 ```
-esp32-firmware/     # C++ firmware for motor/sensor control
-raspberry-pi/        # Control app, boot script, streaming config
-ai-tracking/         # Offboard YOLO11x + ByteTrack pipeline
-docs/                # Architecture diagrams and notes
-media/               # Photos, demo clips
+esp32-firmware/   C++ firmware, motor + sensor control
+raspberry-pi/     Control app, boot script, MediaMTX config
+ai-tracking/      Offboard YOLO11 + ByteTrack pipeline
+docs/             Component and subsystem documentation
+media/            Renders, photos, clips
 ```
 
----
+## Future work
 
-## Future Work
-
-- Onboard (edge) AI inference to remove dependency on an offboard workstation
-- Improved terrain-adaptive suspension tuning
-- SLAM-based autonomous navigation
-- Extended solar/battery capacity for multi-day deployment
-- Mobile app for remote control and monitoring
-
----
+- Onboard (edge) inference to remove the offboard GPU dependency
+- SLAM-based navigation
+- Mobile app for control/monitoring
+- Custom PCB (currently point-to-point wiring)
 
 ## License
 
-MIT License
-
----
+MIT
 
 ## Author
 
-Nistor Darius
-
-Embedded Systems • Robotics • AI
+Nistor Darius — Embedded systems, robotics, AI
