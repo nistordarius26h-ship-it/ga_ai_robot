@@ -1,0 +1,11 @@
+Copyright (c) 2026 Nistor Darius. All rights reserved.
+
+This repository and its contents (source code, design, assets, and
+documentation) are made publicly viewable on GitHub for portfolio and
+demonstration purposes only.
+
+No permission is granted to copy, modify, distribute, sublicense, host,
+or otherwise use this code or any part of it, for any purpose, without
+explicit prior written permission from the copyright holder.
+
+Viewing this repository does not constitute a license to use it.
