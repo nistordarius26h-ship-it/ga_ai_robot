@@ -1,82 +1,100 @@
-# Robotics & Electronics: Sensors, Modules, and Boards
-
-Full hardware list — what each part does and how it connects.
+# Robotics & Electronics: Sensors, Modules and PCB v1
 
 ## Compute & control
 
 | Component | Role |
 |---|---|
-| ESP32 WROOM DevKit | Real-time motor control and sensor safety loop. Dual-core, LEDC PWM, enough GPIO/ADC for the sensor set. See [`3)esp32-firmware.md`](./3%29esp32-firmware.md). |
-| Raspberry Pi 4 (4GB) | Runs the Flask control server, MediaMTX, Cloudflare tunnels, Telegram integration. Needs full Linux for `cloudflared` and MediaMTX, and enough headroom for video. See [`4)raspberry-pi-setup.md`](./4%29raspberry-pi-setup.md). |
+| ESP32 WROOM DevKit | Real-time motor control, local safety, sensors and UART link to Raspberry Pi |
+| Raspberry Pi 4 (4 GB) | Dashboard, MediaMTX, Cloudflare tunnels, Telegram and higher-level software |
+| Offboard GPU workstation | YOLO11 + ByteTrack detection/tracking |
 
 ## Drivetrain
 
-| Component | Role |
-|---|---|
-| 4× 6.5" hoverboard hub motors | One per wheel. No separate gearbox/chain. |
-| 4× DC 6–60V 400W hall-sensor BLDC controller | One per motor. Hall feedback gives real rotor position, better low-speed torque than sensorless. |
-| PCA9685 16-channel PWM driver (I2C 0x40) | Sits between the ESP32 and the four BLDC controllers. Outputs PWM speed + digital direction per motor (8 channels: PWM+DIR × 4), 1 kHz. Keeps motor timing off the ESP32's own GPIO/PWM budget. |
+- 4 × 6.5-inch hoverboard BLDC hub motors
+- 4 × 6–60 V / 400 W Hall-sensor BLDC controllers
+- PCA9685 module, I2C address `0x40`, 1 kHz PWM
+
+Current tested controller wiring is kept simple:
+
+```text
+P/PWM <- PCA9685 channel through 100 ohm series resistor
+DIR   <- PCA9685 channel through 100 ohm series resistor
+GND   <-> common logic/control ground
+```
+
+The controller also exposes `5V`, `0-5V`, `BRAKE`, `STOP`, `S` speed-pulse output and motor Hall connections. PCB v1 leaves `BRAKE` and `S` available as pads/connector pins for future measurement and use. The `0-5V` analog speed input is not used because the project already controls speed through `P` PWM.
 
 ## Power
 
-| Component | Role |
-|---|---|
-| 2× 36V 4.4Ah battery packs | Drivetrain supply, sized for four 400W-class controllers under load. |
-| 36V → 5V 10A buck converter | Logic rail for Pi, ESP32, sensors. |
+- 2 × 36 V, 4.4 Ah battery packs
+- external 36 V → 5 V / 10 A buck converter for Pi/logic power
 
-## Sensors
+An early prototype used a common feeder that was too thin for the combined current of four controllers. It overheated and melted. The traction harness was rebuilt with heavier wiring. Therefore the custom PCB is **not** a traction-power board.
 
-| Sensor | Purpose | Notes |
+Keep off the PCB:
+
+- 36 V main feeder;
+- controller power branches;
+- motor phase wiring;
+- high-current battery distribution.
+
+The PCB handles low-current control/sensor wiring only.
+
+## Grounding
+
+ESP32 GND, PCA GND, Pi UART GND, sensor grounds, motor-controller **signal** grounds and buck-converter output ground share the same electrical reference. The metal chassis does not need to be used as ground.
+
+## Current sensor set
+
+| Sensor | Interface | Connection |
 |---|---|---|
-| Ultrasonic distance sensor | Collision braking below threshold distance. | |
-| DHT11 (temp/humidity) | Environmental monitoring, shown on dashboard. | |
-| Water/rain sensor | Water contact detection. | |
-| Battery voltage sensor | Pack voltage readout. | 100kΩ/6.8kΩ resistor divider, keeps worst-case 36V pack voltage under the ESP32's 3.3V ADC limit. |
-| INMP441 I2S microphone | Sound/gesture triggering (clap detection). | Currently disabled in firmware (`MIC_ENABLED 0`); telemetry sends a placeholder dB value until re-enabled. |
-| Light sensor (analog + digital out) | Ambient light level. | Can gate the IR illuminator or log alongside temp/humidity. |
-| MPU6050 (6-axis IMU) | Accelerometer + gyro, orientation/tilt. | I2C address 0x68. |
-| QMC5883L (3-axis magnetometer) | Compass heading. | I2C address 0x0D. Keep away from motor wiring — sensitive to nearby current and magnets. |
-| 160° FOV night-vision camera | Video for FPV + AI tracking. | Feeds MediaMTX on the Pi. |
+| Ultrasonic US1 | TRIG/ECHO | GPIO18 / GPIO19; ECHO through 10k/20k divider |
+| DHT11 | digital | GPIO4 |
+| Water/rain | digital | GPIO26 |
+| Battery voltage | ADC | GPIO35 via 100 kΩ / 6.8 kΩ divider |
+| INMP441 microphone | I2S | WS27 / SD32 / BCLK14; currently optional/disabled in firmware |
+| Light sensor | analog + digital | GPIO34 / GPIO13 |
+| MPU6050 | I2C | address `0x68` |
+| QMC5883L | I2C | address `0x0D`, mounted remotely |
+| Camera | Raspberry Pi camera interface | wide-angle/night-vision camera |
+
+No battery-current sensor is part of PCB v1.
+
+## QMC5883L placement
+
+The compass should be mounted remotely because hub-motor magnets, high-current battery/phase wiring, motor controllers, the buck converter and nearby steel can distort heading. The main PCB therefore provides a 4-wire remote connector (`3V3/GND/SDA/SCL`) instead of placing the QMC directly beside the motor-control wiring.
+
+## Speed-pulse expansion
+
+Each controller has an `S` speed-pulse output. PCB v1 reserves `S_FL`, `S_FR`, `S_RL`, `S_RR` pads/connector pins, but they are not tied directly to ESP32 GPIO until their output voltage/waveform is measured.
+
+## Ultrasonic expansion
+
+US1 is active now. The PCB may physically provide connectors for US2-US8, but only their power rails are shared. Their TRIG/ECHO signals terminate on an unconnected expansion header/pads. They are **not** all tied to GPIO18/GPIO19.
+
+This keeps PCB v1 simple and avoids ultrasonic cross-talk from firing multiple sensors simultaneously.
 
 ## Actuation / feedback
 
-| Component | Role |
-|---|---|
-| 3-pin transistor active buzzer | Audible status/alert, digital HIGH/LOW drive. |
-| Status LED | Visual state indicator. |
+- active buzzer module signal on GPIO25
+- physical E-stop remains external to the PCB
+- physical ARM switch on GPIO33
+- GPIO2 intentionally unused on PCB v1
 
-## Networking
+## Single-PCB philosophy
 
-| Component | Role |
-|---|---|
-| ZTE MF833N USB 4G modem | Pi's internet uplink in the field, independent of local Wi-Fi. See [`5)cloudflare-telegram-remote-access.md`](./5%29cloudflare-telegram-remote-access.md). |
+The one custom PCB is a **carrier/backplane** for removable modules and robust connectors:
 
-## System diagram
+- ESP32 DevKit socket/header
+- PCA9685 module/header
+- Pi UART connector
+- sensor connectors
+- battery-voltage divider
+- ARM switch input
+- four motor-controller P/DIR/GND interfaces
+- BRAKE/S reserved pads
+- PCA CH8–CH15 expansion
+- US2–US8 expansion pads/header
+- mechanical strain-relief features or locking connectors for remote sensor cables
 
-```
-Sensors ───────►┌──────────────────────────┐
-(ultrasonic,    │         ESP32            │◄──I2C──► PCA9685 ──► 4× BLDC controllers ──► 4× hub motors
- temp/humidity, │  (real-time control &    │
- water, mic,    │   safety loop)           │
- light, MPU6050,└───────────┬──────────────┘
- QMC5883L,                  │ UART (telemetry / commands)
- voltage)                   ▼
-                ┌──────────────────────────┐
-Camera (160°,  ►│      Raspberry Pi 4      │
- night vision)  │  Flask + SocketIO,       │
-                │  MediaMTX, cloudflared   │
-                └───────────┬──────────────┘
-                             │ Cloudflare Tunnel (WebRTC + control)
-                             ▼
-        ZTE MF833N 4G ── Internet ── Browser / Telegram
-                             │
-                             ▼ (video feed)
-              Offboard GPU workstation — YOLO11 + ByteTrack
-
-Power: 2× 36V 4.4Ah packs ──► BLDC controllers (direct)
-                          └──► 36V→5V 10A converter ──► Pi 4, sensors, logic
-```
-
-ESP32 owns real-time/safety-critical control, the Pi owns networking/media, the offboard workstation owns AI. Each board does one job.
-
-See also: [`2)electrical-engineering-pcb.md`](./2%29electrical-engineering-pcb.md), [`3)esp32-firmware.md`](./3%29esp32-firmware.md), [`6)ai-tracking-computer-vision.md`](./6%29ai-tracking-computer-vision.md).
+No LiDAR, ToF, current sensor, MOSFET accessory stage, logic-buffer IC or ultrasonic mux/decoder is required for PCB v1.
