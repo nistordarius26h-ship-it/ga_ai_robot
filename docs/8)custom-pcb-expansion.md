@@ -4,10 +4,10 @@
 
 PCB v1 keeps the robot's existing working modules and replaces loose point-to-point wiring with one robust carrier PCB. It does not attempt to integrate every function as bare ICs.
 
-### Installed/removable modules
+### Installed modules
 
-- ESP32 DevKit on female headers
-- PCA9685 breakout/module on headers
+- ESP32 DevKi
+- PCA9685 module
 - MPU6050 module
 - QMC5883L remote module
 - DHT11 module
@@ -17,16 +17,6 @@ PCB v1 keeps the robot's existing working modules and replaces loose point-to-po
 - ultrasonic US1
 - active buzzer module
 
-### Not included in PCB v1
-
-- LiDAR or ToF
-- ACS758/current sensing
-- MOSFET accessory outputs
-- SN74AHCT125 buffers
-- ULN2003A
-- extra clamp/Schottky networks
-- eight-sensor ultrasonic multiplexer/decoder logic
-- traction-current distribution
 
 ## Motor-controller connector plan
 
@@ -41,7 +31,7 @@ BRAKE   reserved
 STOP    reserved / existing physical E-stop remains separate
 ```
 
-Only `P`, `DIR` and `GND` are required by PCB v1. `P` and `DIR` each receive a 100-ohm series resistor from PCA channels 0–7.
+Only `P`, `DIR` and `GND` are required by PCB v1. `P` and `DIR` each receive a 100-220-ohm series resistor from PCA channels 0–7.
 
 ## Remote QMC5883L cable
 
