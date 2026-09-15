@@ -8,8 +8,8 @@ from flask import Flask, render_template_string, make_response
 from flask_socketio import SocketIO
 
 # --- TELEGRAM CONFIGURATION ---
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
-TELEGRAM_CHAT_ID   = os.getenv("TELEGRAM_CHAT_ID", "")
+TELEGRAM_BOT_TOKEN = "your_bot_token" #get at @BotFather
+TELEGRAM_CHAT_ID = "your_user_id" #get at @userinfobot by gmedia
 
 ser = serial.Serial('/dev/serial0', baudrate=115200, timeout=1)
 
