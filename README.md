@@ -148,8 +148,6 @@ PCB v1 is one simple low-voltage **carrier/backplane** board. It keeps the exist
 - PCA CH8–CH15 expansion header/pads
 - keyed/locking connectors or through-hole solder pads with mechanical strain relief for remote sensor cables
 
-The PCB intentionally does **not** include traction-current distribution, LiDAR, ToF, ACS758/current sensing, MOSFET accessory stages, SN74AHCT125/ULN2003-style interface ICs, clamp networks or ultrasonic mux/decoder logic.
-
 The high-current 36 V battery and motor-controller power paths remain external.
 
 ## Navigation expansion
@@ -177,12 +175,6 @@ docs/             subsystem documentation
 media/            CAD exports, renders, photos and clips
 ai-tracking.md    link/summary for the external tracking project
 ```
-
-## Security
-
-- Never commit Telegram, TURN, Cloudflare, or other credentials.
-- Store deployment credentials in `/etc/ga-ai-robot/robot.env` with restricted permissions.
-- Quick Tunnel URLs are not a replacement for authentication. For a permanent deployment, use authenticated access (for example a named tunnel + access policy) before exposing motor control publicly.
 
 ## License
 
