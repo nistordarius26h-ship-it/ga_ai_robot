@@ -1,15 +1,18 @@
 [Unit]
-Description=4G FPV Robot Control and Cloudflare Tunnels
-After=network-online.target
+Description=GA AI Robot 4G control, video and tunnels
 Wants=network-online.target
+After=network-online.target
 
 [Service]
 Type=simple
 User=raspforex
 WorkingDirectory=/home/raspforex
-ExecStart=/bin/bash /home/raspforex/launch_robot.sh
+EnvironmentFile=-/etc/ga-ai-robot/robot.env
+ExecStart=/home/raspforex/launch_robot.sh
 Restart=always
 RestartSec=5
+TimeoutStopSec=15
+KillMode=mixed
 
 [Install]
 WantedBy=multi-user.target
