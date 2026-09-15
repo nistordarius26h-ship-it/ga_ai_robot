@@ -17,8 +17,8 @@
 Current tested controller wiring is kept simple:
 
 ```text
-P/PWM <- PCA9685 channel through 100 ohm series resistor
-DIR   <- PCA9685 channel through 100 ohm series resistor
+P/PWM <- PCA9685 channel through 100-220 ohm series resistor
+DIR   <- PCA9685 channel through 100-220 ohm series resistor
 GND   <-> common logic/control ground
 ```
 
@@ -58,8 +58,6 @@ ESP32 GND, PCA GND, Pi UART GND, sensor grounds, motor-controller **signal** gro
 | QMC5883L | I2C | address `0x0D`, mounted remotely |
 | Camera | Raspberry Pi camera interface | wide-angle/night-vision camera |
 
-No battery-current sensor is part of PCB v1.
-
 ## QMC5883L placement
 
 The compass should be mounted remotely because hub-motor magnets, high-current battery/phase wiring, motor controllers, the buck converter and nearby steel can distort heading. The main PCB therefore provides a 4-wire remote connector (`3V3/GND/SDA/SCL`) instead of placing the QMC directly beside the motor-control wiring.
@@ -85,16 +83,13 @@ This keeps PCB v1 simple and avoids ultrasonic cross-talk from firing multiple s
 
 The one custom PCB is a **carrier/backplane** for removable modules and robust connectors:
 
-- ESP32 DevKit socket/header
-- PCA9685 module/header
+- ESP32 DevKit socket
+- PCA9685 module
 - Pi UART connector
 - sensor connectors
 - battery-voltage divider
 - ARM switch input
 - four motor-controller P/DIR/GND interfaces
-- BRAKE/S reserved pads
 - PCA CH8–CH15 expansion
 - US2–US8 expansion pads/header
-- mechanical strain-relief features or locking connectors for remote sensor cables
-
-No LiDAR, ToF, current sensor, MOSFET accessory stage, logic-buffer IC or ultrasonic mux/decoder is required for PCB v1.
+- mechanical strain-relief features or locking connectors for remote sensor cable
