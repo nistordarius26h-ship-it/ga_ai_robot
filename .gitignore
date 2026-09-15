@@ -4,16 +4,22 @@ __pycache__/
 .venv/
 venv/
 
-# C++
+# C++ / firmware build artifacts
 *.o
 *.elf
 *.bin
-
-# PlatformIO
 .pio/
 
-# Raspberry Pi
+# Runtime logs
 *.log
+
+# Secrets / local deployment config
+.env
+*.env
+robot.env
+secrets.*
+*.secret
+raspberry-pi/mediamtx.local.yml
 
 # Models
 *.pt
